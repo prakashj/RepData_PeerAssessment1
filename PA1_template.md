@@ -160,10 +160,10 @@ head(mdata)
 par(mfrow = c(2, 1))
 wkday <- aggregate(steps ~ interval, data = mdata, subset = mdata$daytype == 
     "weekday", FUN = mean)
-plot(wkday, type = "l", main = "weekday")
+plot(wkday, type = "l", main = "Weekday")
 wkend <- aggregate(steps ~ interval, data = mdata, subset = mdata$daytype == 
     "weekend", FUN = mean)
-plot(wkend, type = "l", main = "weekend")
+plot(wkend, type = "l", main = "Weekend")
 ```
 
 ![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7.png) 
