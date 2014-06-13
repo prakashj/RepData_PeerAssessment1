@@ -1,20 +1,106 @@
 # Reproducible Research: Peer Assessment 1
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
 
+```{r setoptions, echo=FALSE}
+#Set scientific notation change to 10^5 and round to 2
+options(scipen = 1, digits = 2)
+
+```
 
 ## Loading and preprocessing the data
+1. Check if zip file exists
+2. If not, download the file,
+3. Unzip and read the file activity.csv
 
+```{r echo=TRUE}
+filename <- "repdata_activity.zip"
+fileurl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+  if (!file.exists(filename)){
+    download.file(fileurl,destfile=filename, method="curl")
+  }
+  unzip(filename)
+  datafile <- read.csv("activity.csv",colClasses=c("numeric","character","numeric"))
+# convert to date format
+datafile$date <- as.Date(datafile$date,format="%Y-%m-%d")
+
+```
+Explore data
+
+```{r echo=TRUE}
+summary(datafile)
+str(datafile)
+```
 
 
 ## What is mean total number of steps taken per day?
 
+```{r calc_mean,echo=TRUE}
+#aggregate by date
+aggdata <- aggregate(steps ~ date, datafile, sum)
+mean_val <- mean(aggdata$steps)
+median_val <- median(aggdata$steps)
+hist(aggdata$steps,main="Histogram of Steps per Day",xlab="# of steps")
+```
+
+Mean of dataset **`r mean_val`**   
+Median is **`r median_val`**
 
 
 ## What is the average daily activity pattern?
 
+```{r}
+aggdata <- aggregate(steps~interval,data=datafile,mean,na.rm=T)
+maxinterval <- aggdata[which.max(aggdata$steps),]
+
+plot(aggdata$interval,aggdata$steps,type="l",xlab="Interval",ylab="Avg Steps",main="Average Daily Pattern")
+points(maxinterval$interval,0,col="red",pch=15) # highlight max interval
+```
+
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r}
+aggdata[which.max(aggdata$steps),]
+
+```
 
 
 ## Imputing missing values
+There are a number of days/intervals where there are missing values (coded as NA). 
+```{r}
+nadata <- is.na(datafile)
+table(nadata)
 
+```
 
+Replacing missing value with mean value of that interval
+```{r}
+mdata <- merge(datafile,aggdata, by="interval",all.x=TRUE)
+mdata$steps.x <- ifelse(is.na(mdata$steps.x),mdata$steps.y,mdata$steps.x)
+mdata <- mdata[,c(1:3)]
+colnames(mdata) <- c("interval","steps","date")
+aggdata <- aggregate(steps ~ date, mdata, sum)
+mean_val <- mean(aggdata$steps)
+median_val <- median(aggdata$steps)
+hist(aggdata$steps,main="Histogram of Steps per Day",xlab="# of steps")
+
+```
+Updated Mean values  
+Mean of dataset **`r mean_val`**   
+Median is **`r median_val`**
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Create a new column in the dataset to indicate week day type.
+
+
+```{r, echo=TRUE}
+mdata$daytype <- ifelse(weekdays(as.Date(mdata$date)) %in% c("Saturday","Sunday"), "weekend","weekday") 
+  head(mdata)
+par(mfrow =c (2,1))
+wkday <- aggregate(steps ~ interval, data=mdata, subset=mdata$daytype == "weekday",FUN=mean)
+plot(wkday,type="l",main="weekday")
+wkend <-  aggregate(steps ~ interval, data=mdata, subset=mdata$daytype == "weekend",FUN=mean)
+plot(wkend,type="l", main="weekend")
+
+```
+
+
